@@ -53,20 +53,64 @@
     dest: "{{ builder_dir | default(build_dir.path) }}/execution_environment.yml"
     mode: '0644'
 
-- name: Run the Ansible Builder Program
+- name: Run the Ansible Builder create command
   ansible.builtin.command: >
-    ansible-builder build -f
+    ansible-builder create -f
       {{ builder_dir | default(build_dir.path) }}/execution_environment.yml
-      -t {{ __execution_environment_definition.name | default( __execution_environment_definition.ee_name )}}{% if __execution_environment_definition.tag is defined %}:{{ __execution_environment_definition.tag }}{% endif %} --container-runtime={{ ee_container_runtime }}
-      {% if ee_prune_images %} --prune-images{% endif %}
-      {% if ee_galaxy_keyring is defined %} --galaxy-keyring={{ ee_galaxy_keyring }}{% endif %}
-      {% if ee_galaxy_ignore_signature_status_code is defined %}{% for status_code in ee_galaxy_ignore_signature_status_code %} --galaxy-ignore-signature-status-code={{ status_code }}{% endfor %}{% endif %}
-      {% if galaxy_required_valid_signature_count is defined %} --galaxy-required-valid-signature-count={{ galaxy_required_valid_signature_count }}{% endif %}
-      {% if ee_container_policy is defined %} --container-policy={{ ee_container_policy }}{% endif %}
-      --verbosity {{ ee_verbosity | default(0) }}
   args:
     chdir: "{{ builder_dir | default(build_dir.path) }}/"
   changed_when: true   # these will always run and will always report "changed" otherwise
+
+- name: Modify context/containerfile to include --ignore-certs
+  ansible.builtin.lineinfile:
+    path: "{{ builder_dir | default(build_dir.path) }}/context/Containerfile"
+    regexp: '^RUN .* ansible-galaxy collection install'
+    line: 'RUN ANSIBLE_GALAXY_DISABLE_GPG_VERIFY=1 ansible-galaxy collection install $ANSIBLE_GALAXY_CLI_COLLECTION_OPTS -r requirements.yml --collections-path "/usr/share/ansible/collections" --ignore-certs'
+
+- name: Ensure pip.conf is rendered
+  ansible.builtin.template:
+    src: pip.conf.j2
+    dest: "{{ builder_dir | default(build_dir.path) }}/context/pip.conf"
+    mode: '0644'
+  when: ee_pull_collections_from_hub
+
+- name: Modify context/containerfile to add pip.conf
+  ansible.builtin.lineinfile:
+    path: "{{ builder_dir | default(build_dir.path) }}/context/Containerfile"
+    regexp: 'ADD pip.conf /etc/pip.conf'
+    line: 'ADD pip.conf /etc/pip.conf'
+    insertbefore: '^RUN assemble'
+
+- name: Modify context/containerfile to add pip.conf
+  ansible.builtin.lineinfile:
+    path: "{{ builder_dir | default(build_dir.path) }}/context/Containerfile"
+    regexp: 'ADD pip.conf  /etc/pip.conf'
+    line: 'ADD pip.conf  /etc/pip.conf'
+    insertbefore: '^RUN /output/install-from-bindep && rm -rf /output/wheels'
+
+- name: Run the podman build command
+  ansible.builtin.command: >
+    podman build -f
+      Containerfile
+      -t {{ __execution_environment_definition.name | default( __execution_environment_definition.ee_name )}}{% if __execution_environment_definition.tag is defined %}:{{ __execution_environment_definition.tag }}{% endif %}
+  args:
+    chdir: "{{ builder_dir | default(build_dir.path) }}/context"
+  changed_when: true   # these will always run and will always report "changed" otherwise
+
+# - name: Run the Ansible Builder Program
+#   ansible.builtin.command: >
+#     ansible-builder build -f
+#       {{ builder_dir | default(build_dir.path) }}/execution_environment.yml
+#       -t {{ __execution_environment_definition.name | default( __execution_environment_definition.ee_name )}}{% if __execution_environment_definition.tag is defined %}:{{ __execution_environment_definition.tag }}{% endif %} --container-runtime={{ ee_container_runtime }}
+#       {% if ee_prune_images %} --prune-images{% endif %}
+#       {% if ee_galaxy_keyring is defined %} --galaxy-keyring={{ ee_galaxy_keyring }}{% endif %}
+#       {% if ee_galaxy_ignore_signature_status_code is defined %}{% for status_code in ee_galaxy_ignore_signature_status_code %} --galaxy-ignore-signature-status-code={{ status_code }}{% endfor %}{% endif %}
+#       {% if galaxy_required_valid_signature_count is defined %} --galaxy-required-valid-signature-count={{ galaxy_required_valid_signature_count }}{% endif %}
+#       {% if ee_container_policy is defined %} --container-policy={{ ee_container_policy }}{% endif %}
+#       --verbosity {{ ee_verbosity | default(0) }}
+#   args:
+#     chdir: "{{ builder_dir | default(build_dir.path) }}/"
+#   changed_when: true   # these will always run and will always report "changed" otherwise
 
 - name: Push image to registry
   containers.podman.podman_image:
@@ -90,4 +134,16 @@
     state: absent
     path: "{{ build_dir.path | default(builder_dir) }}"
   when: ee_builder_dir_clean
+
+- name: Add EE to Automation Controller
+  ansible.controller.execution_environment:
+    controller_host: "{{ controller_host }}"
+    controller_username: "{{ controller_username }}"
+    controller_password: "{{ controller_password }}"
+    validate_certs: "{{ controller_verify_ssl }}"
+    name: "{{ __execution_environment_definition.name }}"
+    organization: "{{ __execution_environment_definition.controller_organization }}"
+    image: "{{ ee_registry_dest }}/{{ __execution_environment_definition.name }}"
+    pull: "{{ __execution_environment_definition.controller_pull }}"
+    credential: "{{ __execution_environment_definition.controller_credential }}"
 ...
