@@ -134,16 +134,4 @@
     state: absent
     path: "{{ build_dir.path | default(builder_dir) }}"
   when: ee_builder_dir_clean
-
-- name: Add EE to Automation Controller
-  ansible.controller.execution_environment:
-    controller_host: "{{ controller_host }}"
-    controller_username: "{{ controller_username }}"
-    controller_password: "{{ controller_password }}"
-    validate_certs: "{{ controller_verify_ssl }}"
-    name: "{{ __execution_environment_definition.name }}"
-    organization: "{{ __execution_environment_definition.controller_organization }}"
-    image: "{{ ee_registry_dest }}/{{ __execution_environment_definition.name }}"
-    pull: "{{ __execution_environment_definition.controller_pull }}"
-    credential: "{{ __execution_environment_definition.controller_credential }}"
 ...
