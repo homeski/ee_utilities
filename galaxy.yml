@@ -1,7 +1,7 @@
 ---
 namespace: escwq
 name: ee_utilities
-version: 0.0.1
+version: 0.0.2
 description: A collection of utility roles for usage with Ansible Execution Enviroments
 readme: README.md
 authors:
