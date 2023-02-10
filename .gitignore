@@ -12,7 +12,7 @@
 # Ignore any included collections
 collections/*
 !collections/requirements.yml
-galaxy.yml
+# galaxy.yml
 *.tar.gz
 
 # Ignore Vim working files
@@ -20,3 +20,6 @@ galaxy.yml
 
 # Ignore test directory
 test
+
+# Ignore builds directory
+builds/*

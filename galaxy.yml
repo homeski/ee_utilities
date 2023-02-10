@@ -1,14 +1,15 @@
 ---
-namespace: {{ collection_namespace }}
-name: {{ collection_name }}
-version: {{ collection_version }}
+namespace: escwq
+name: ee_utilities
+version: 0.0.1
 description: A collection of utility roles for usage with Ansible Execution Enviroments
 readme: README.md
 authors:
     - Sean Sullivan @sean-m-sullivan
     - Anshul Behl @anshulbehl
-repository: {{ collection_repo }}
-issues: {{ collection_repo }}/issues
+    - Homero Pawlowski @homeski
+repository: https://github.com/homeski/ee_utilities
+issues: https://github.com/homeski/ee_utilities/issues
 build_ignore:
     - galaxy.yml.j2
     - release.yml
