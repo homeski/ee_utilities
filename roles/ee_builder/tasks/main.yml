@@ -8,17 +8,45 @@
 - name: Push to controller
   tags:
     - set_stats
+  vars:
+    execution_environments: []
   block:
-    - ansible.builtin.set_stats:
+    # - ansible.builtin.set_stats:
+    #     data:
+    #       execution_environments: "{{ ee_list | community.general.json_query(q) }}"
+    #   vars:
+    #     q: >
+    #       [?ee_create].{
+    #         create: ee_create,
+    #         name: name,
+    #         organization: ee_organization,
+    #         pull: ee_pull,
+    #         image: join(':',[name, tag])
+    #       }
+    - name: Parse execution environments to create
+      ansible.builtin.set_fact:
+        execution_environments: >
+          {{
+            execution_environments +
+            [{
+              'name': item.name,
+              'organization': item.ee_organization,
+              'pull': item.ee_pull,
+              'credential': item.ee_credential,
+              'image': item.name + ":" + item.tag
+            }]
+          }}
+      when: item.ee_create | bool
+      loop: "{{ ee_list }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Debug execution_environments
+      ansible.builtin.debug:
+        var: execution_environments
+
+    - name: Set execution_environments data
+      ansible.builtin.set_stats:
         data:
-          execution_environments: "{{ ee_list | community.general.json_query(q) }}"
-      vars:
-        q: >
-          [?ee_create].{
-            create: ee_create,
-            name: name,
-            organization: ee_organization,
-            pull: ee_pull,
-            image: join(':',[name, tag])
-          }
+          execution_environments: "{{ execution_environments }}"
 ...
