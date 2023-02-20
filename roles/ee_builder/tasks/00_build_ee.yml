@@ -92,7 +92,7 @@
   ansible.builtin.command: >
     podman build -f
       Containerfile
-      -t {{ __execution_environment_definition.name | default( __execution_environment_definition.ee_name )}}{% if __execution_environment_definition.tag is defined %}:{{ __execution_environment_definition.tag }}{% endif %}
+      -t {{ automation_hub_host }}/{{ ee_organization }}/{{ __execution_environment_definition.name | default( __execution_environment_definition.ee_name )}}{% if __execution_environment_definition.tag is defined %}:{{ __execution_environment_definition.tag }}{% endif %}
   args:
     chdir: "{{ builder_dir | default(build_dir.path) }}/context"
   changed_when: true   # these will always run and will always report "changed" otherwise
@@ -114,7 +114,7 @@
 
 - name: Push image to registry
   containers.podman.podman_image:
-    name: "{{ __execution_environment_definition.name }}"
+    name: "{{ automation_hub_host }}/{{ ee_organization }}/{{ __execution_environment_definition.name }}"
     pull: false
     push: true
     username: "{{ ee_registry_username | default(omit, true) }}"

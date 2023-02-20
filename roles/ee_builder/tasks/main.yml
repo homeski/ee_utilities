@@ -30,7 +30,7 @@
             execution_environments +
             [{
               'name': item.name,
-              'organization': item.ee_organization,
+              'organization': ee_organization,
               'pull': item.ee_pull,
               'credential': item.ee_credential,
               'image': item.name + ":" + item.tag

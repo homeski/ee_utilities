@@ -1,7 +1,7 @@
 ---
 namespace: escwq
 name: ee_utilities
-version: 0.0.4
+version: 0.0.6
 description: A collection of utility roles for usage with Ansible Execution Enviroments
 readme: README.md
 authors:
@@ -20,6 +20,7 @@ build_ignore:
     - .pre-commit-config.yaml
     - .gitignore
     - .gitattributes
+    - builds/*
 license:
     - GPL-3.0-or-later
 tags:
